@@ -1,100 +1,124 @@
 import os
+from tkinter.filedialog import askdirectory
+from separa_sip import *
+from tkinter import *
+from tkinter import messagebox
 
-class Log:
 
-    def __init__(self):
-        self.arqs = []
-        self.callid = []
-        self.bilhetes = []
-        self.bilhetes_escolhidos = []
-        self.call = ""        
-        self.separadow = ""
-        self.f = ''
-    
-    def ArquivoFinal(self):
-        self.separadow = open(input("Digite o nome do arquivo final sem extensão: ") + '.log', 'w')
+class Application:
+    def __init__(self, master=None):
+        self.log = Log()
+        self.listofarqs = []
+        self.index = 0
+        self.fonte = ("Verdana", "8")
+
+        self.container1 = Frame(master)
+        self.container1["pady"] = 10
+        self.container1.pack()
+
+        self.container2 = Frame(master)
+        self.container2["pady"] = 10
+        self.container2.pack()
+
+        self.container3 = Frame(master)
+        self.container3["padx"] = 20
+        self.container3["pady"] = 5
+        self.container3.pack()
+
+        self.container4 = Frame(master)
+        self.container4["padx"] = 10
+        self.container4["pady"] = 10
+        self.container4.pack()
+
+        self.container5 = Frame(master)
+        self.container5["padx"] = 20
+        self.container5["pady"] = 5
+        self.container5.pack()
+
+        self.container6 = Frame(self.container5)
+        self.container6["padx"] = 10
+        self.container6["pady"] = 10
+        self.container6.pack()
+
+        self.container7 = Frame(self.container5)
+        self.container7["padx"] = 10
+        self.container7["pady"] = 10
+        self.container7.pack()
+
+        self.titulo = Label(self.container1, text="Separa Sip",font=("Calibri", "9", "bold")).pack()
+
+        self.lblarquivofinal = Label(self.container2, text="Arquivo Final:", font=self.fonte, width=12)
         
-    
-    def DirecionaFolder(self):
-        #self.Folder(str(input("Digite a pasta: ")))
-        os.chdir(input("Digite a pasta: "))
 
-    def listArqs(self):
-        self.arqs = os.listdir()
+        self.txtarquivofinal = Entry(self.container2,width=30,font=self.fonte)
+        
 
-    def busca(self):
-        self.call = input("Digite o numero: ")
+        self.lblANI = Label(self.container3, text="ANI:", font=self.fonte, width=10).pack(side=LEFT)
+
+        self.txtANI = Entry(self.container3,width=30,font=self.fonte)
+        self.txtANI.pack(side=RIGHT)
+
+        self.btnCarrega = Button(self.container4, text="Carrega", font=self.fonte, width=12,command=self.directorychooser)
+        self.btnCarrega.pack(side=LEFT)
+        self.btnSalva = Button(self.container4, text="Salva", font=self.fonte, width=12,command=self.salvaResult)
+        
+        self.listbox = Listbox(self.container5, width=200, height=50, selectmode=SINGLE)
+        self.listbox.bind("<Double-Button-1>", self.curselet)
+        self.scrollbar = Scrollbar(self.container5, orient="vertical")
 
 
-    def criaListaCallid(self,linha):
-        if linha.find("Call-ID: ") >= 0:
-            callidstr = linha[9:linha.find("@")]
-            if callidstr not in self.callid:
-                self.callid.append(callidstr)
-
-    def openFile(self):
-        for a in self.arqs:
-            if a.find("rm_") < 0:
-                continue
-            with open(a, 'r', encoding='utf-8', errors='ignore') as file:
-                self.f = file.readlines()
-            file.close()
-            self.preencheBilhetes()
-            self.preencheBilhetesEscolhidos()
-
-    def preencheBilhetes(self):
-        achado = False
-        kall = 0
-        sip = False
-        count = -1
-
-        for linha in self.f:
-            if linha.find('CCPSIPMessageInterceptor') > 1:
-                kall = len(self.bilhetes)+1
-                sip = True
-                #fw.write("\n")
-                #fw.write(linha)
-                self.bilhetes.append("\n")
-                self.bilhetes.append(linha)
-                achado = False
+    def destacaTexto(self):
+        tamanho_lista = 0
+        for linha in self.log.resultadoFinal:
+            self.listbox.insert(tamanho_lista,linha)
+            if "RM - SIP Message " in linha:
+                self.listbox.itemconfig(tamanho_lista)
+            elif self.log.call in linha:
+                self.listbox.itemconfig(tamanho_lista, bg = "green")
             else:
-                if sip == True and linha.find('2021-') < 0:
-                    if len(linha) > 2:
-                        count = count + 1
-                        #fw.write(linha)
-                        self.bilhetes.append(linha)
-                        self.criaListaCallid(linha)
-                        if linha.find(self.call) > 1 and achado is False:
-                            self.bilhetes_escolhidos.append(kall)
-                            achado = True
-                else:
-                    sip = False
-                    achado = False
+                self.listbox.itemconfig(tamanho_lista, bg = "white")
+            tamanho_lista += 1
+
+    def curselet(self, event):
+        widget = event.widget
+        selection = widget.curselection()
+        self.index = selection[0]
+
+
+    def directorychooser(self):
+        # askdirectory é um método do Tkinter que abre uma janela para escolher o diretorio
+        directory = askdirectory()
+        os.chdir(directory)
+        self.listbox.pack(side=LEFT)
+        self.scrollbar.config(command=self.listbox.yview)
+        self.scrollbar.pack(side=RIGHT, fill="y")
+        self.listbox.config(yscrollcommand=self.scrollbar.set) 
+        self.log.arqs = os.listdir(directory)
+        self.log.call = self.txtANI.get()
+        tamanho_lista = 0
+        self.log.openFile()
         
-    def preencheBilhetesEscolhidos(self):
-        for linhab in self.bilhetes_escolhidos:
-            acabou = False
-            count = linhab
-            while acabou is not True:
-                if len(str(self.bilhetes[count])) < 3:
-                    acabou = True
-                    self.separadow.write("\n")
-                else:
-                    self.separadow.write(self.bilhetes[count])
-                    count = count + 1
+        for linha in self.log.resultadoFinal:
+            self.listbox.insert(tamanho_lista,linha)
+            tamanho_lista = tamanho_lista + 1
+        self.btnSalva.pack(side=RIGHT)
+        self.lblarquivofinal.pack(side=LEFT)
+        self.txtarquivofinal.pack(side=RIGHT)
+        
+    def salvaResult(self):        
+        if len(self.txtarquivofinal.get()) > 1:
+            self.log.arquivofinal = self.txtarquivofinal.get()
+            self.log.defineArqFinal()
+            try:
+                for linha in self.log.resultadoFinal:
+                    self.log.separadow.write(linha)
+                messagebox.showinfo(message="Arquivo Salvo com Sucesso")
+            except:    
+                messagebox.showerror(message="Problemas para salvar no arquivo informado")
+                print(sys.exc_info()[0])
+        else:
+            messagebox.showwarning(message="Favor colocar o nome do arquivo final")
 
-
-    def mostraBilhetes(self):
-        print("Quantidade de pacotes: " + str(len(self.bilhetes_escolhidos)))
-        for b in self.bilhetes_escolhidos:
-            print(b)
-
-
-
-if __name__ == '__main__':
-    log = Log()
-    log.DirecionaFolder()
-    log.ArquivoFinal()
-    log.listArqs()
-    log.busca()
-    log.openFile()
+root = Tk()
+Application(root)
+root.mainloop()
