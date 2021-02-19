@@ -1,5 +1,17 @@
 import os
 
+class Pacote:
+    def __init__(self,to_,from_,type_,direction,via,max_forwads,CSeq,caliid,contact,xml):
+        self.to_ = to_
+        self.from_ = from_
+        self.type_ = type_
+        self.direction = direction
+        self.via = via
+        self.max_forwads = max_forwads
+        self.CSeq = CSeq
+        self.caliid = caliid
+        self.contact = contact
+        self.xml = xml
 class Log:
 
     def __init__(self):
@@ -56,7 +68,7 @@ class Log:
             if linha.find('CCPSIPMessageInterceptor') > 1:
                 kall = len(self.bilhetes)+1
                 sip = True
-                self.bilhetes.append("\n")                
+                self.bilhetes.append("\n")
                 self.bilhetes.append(linha)
                 achado = False
             else:

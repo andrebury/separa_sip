@@ -1,70 +1,93 @@
 import os
-from tkinter.filedialog import askdirectory
 from separa_sip import *
-from tkinter import *
+
+import tkinter as tk
 from tkinter import messagebox
+from tkinter.filedialog import askdirectory,askopenfilenames, asksaveasfilename
+
 
 
 class Application:
     def __init__(self, master=None):
+        master_window = tk.Tk()
+        master_window.title("SeparaSip")
+        self.files = []
         self.log = Log()
         self.listofarqs = []
         self.index = 0
         self.fonte = ("Verdana", "8")
 
-        self.container1 = Frame(master)
-        self.container1["pady"] = 10
-        self.container1.pack()
+        self.containerCabecalho = tk.Frame(master_window)
+        self.containerCabecalho.grid( row=0,padx=10, pady=10,sticky=tk.E+tk.W)
 
-        self.container2 = Frame(master)
-        self.container2["pady"] = 10
-        self.container2.pack()
 
-        self.container3 = Frame(master)
-        self.container3["padx"] = 20
-        self.container3["pady"] = 5
-        self.container3.pack()
+        # self.containerSelecao = tk.Frame(self.containerCabecalho)
+        # self.containerSelecao.grid( row=0,column=0,padx=10, pady=10)
 
-        self.container4 = Frame(master)
-        self.container4["padx"] = 10
-        self.container4["pady"] = 10
-        self.container4.pack()
+        self.containerInterface = tk.Frame(self.containerCabecalho)
+        self.containerInterface.grid( row=0,column=1,padx=10, pady=10)
 
-        self.container5 = Frame(master)
-        self.container5["padx"] = 20
-        self.container5["pady"] = 5
-        self.container5.pack()
+        self.containerTxtANI = tk.Frame(self.containerInterface)
+        self.containerTxtANI.grid( row=0,column=0,padx=10, pady=10)
 
-        self.container6 = Frame(self.container5)
-        self.container6["padx"] = 10
-        self.container6["pady"] = 10
-        self.container6.pack()
+        self.containerTxtANI_1 = tk.Frame(self.containerTxtANI)
+        self.containerTxtANI_1.grid( row=0,column=0)
 
-        self.container7 = Frame(self.container5)
-        self.container7["padx"] = 10
-        self.container7["pady"] = 10
-        self.container7.pack()
+        self.containerTxtANI_2 = tk.Frame(self.containerTxtANI)
+        self.containerTxtANI_2.grid( row=0,column=1)
 
-        self.titulo = Label(self.container1, text="Separa Sip",font=("Calibri", "9", "bold")).pack()
+        self.containerBtn = tk.Frame(self.containerInterface)
+        self.containerBtn.grid( row=2,column=0,padx=10, pady=10)
 
-        self.lblarquivofinal = Label(self.container2, text="Arquivo Final:", font=self.fonte, width=12)
+        self.containerListBoxTextArea = tk.Frame(master_window)
+        self.containerListBoxTextArea.grid(sticky=tk.E+tk.W+tk.N+tk.S,padx=10, pady=10)
+
+
+        master_window.columnconfigure(0, weight=1)
+        master_window.rowconfigure(1, weight=1)
+
+        self.containerListBoxTextArea.rowconfigure(0, weight=1)
+        self.containerListBoxTextArea.columnconfigure(0, weight=1)
+
+
+
+
+        # self.listboxCall = tk.Listbox(self.containerSelecao, width=20, height=10, selectmode=tk.SINGLE)
+        # self.listboxCall.bind("<Double-Button-1>", self.curseletCall)
+        # self.scrollbarCall = tk.Scrollbar(self.containerSelecao, orient="vertical")
+
         
 
-        self.txtarquivofinal = Entry(self.container2,width=30,font=self.fonte)
+        self.lblANI = tk.Label(self.containerTxtANI_1, text="ANI:", font=self.fonte, width=15)
+        self.lblANI.pack(side=tk.RIGHT)
+        self.txtANI = tk.Entry(self.containerTxtANI_2,width=30,font=self.fonte)
+        self.txtANI.pack(side=tk.LEFT)
+
+    
+  
+
+        self.btnCarrega = tk.Button(self.containerBtn, text="Carrega", font=self.fonte, width=12,command=self.directorychooser)
+        self.btnCarrega.pack(side=tk.BOTTOM)
+        self.btnSalva = tk.Button(self.containerBtn, text="Salva", font=self.fonte, width=12,command=self.salvaResult)
         
-
-        self.lblANI = Label(self.container3, text="ANI:", font=self.fonte, width=10).pack(side=LEFT)
-
-        self.txtANI = Entry(self.container3,width=30,font=self.fonte)
-        self.txtANI.pack(side=RIGHT)
-
-        self.btnCarrega = Button(self.container4, text="Carrega", font=self.fonte, width=12,command=self.directorychooser)
-        self.btnCarrega.pack(side=LEFT)
-        self.btnSalva = Button(self.container4, text="Salva", font=self.fonte, width=12,command=self.salvaResult)
-        
-        self.listbox = Listbox(self.container5, width=200, height=50, selectmode=SINGLE)
+        self.listbox = tk.Listbox(self.containerListBoxTextArea,selectmode=tk.EXTENDED)
         self.listbox.bind("<Double-Button-1>", self.curselet)
-        self.scrollbar = Scrollbar(self.container5, orient="vertical")
+        self.scrollbar = tk.Scrollbar(self.containerListBoxTextArea, orient="vertical")
+
+
+        # self.listbox.pack(side=tk.LEFT,expand=True)
+        self.scrollbar.config(command=self.listbox.yview)
+        # self.scrollbar.pack(side=tk.RIGHT, fill="y",expand=True)
+        self.listbox.config(yscrollcommand=self.scrollbar.set)
+
+        self.listbox.grid(row=0, column=0, sticky=tk.E+tk.W+tk.N+tk.S)
+        self.scrollbar.grid(row=0, column=1, sticky=tk.E+tk.W+tk.N+tk.S)
+
+        # self.listboxCall.pack(side=tk.LEFT)
+        # self.scrollbarCall.config(command=self.listboxCall.yview)
+        # self.scrollbarCall.pack(side=tk.LEFT, fill="y",expand=True)
+        # self.listboxCall.config(yscrollcommand=self.scrollbarCall.set)
+        master_window.mainloop()
 
 
     def destacaTexto(self):
@@ -83,31 +106,34 @@ class Application:
         widget = event.widget
         selection = widget.curselection()
         self.index = selection[0]
+    
+    def curseletCall(self, event):
+        pass
 
 
     def directorychooser(self):
-        # askdirectory é um método do Tkinter que abre uma janela para escolher o diretorio
-        directory = askdirectory()
-        os.chdir(directory)
-        self.listbox.pack(side=LEFT)
-        self.scrollbar.config(command=self.listbox.yview)
-        self.scrollbar.pack(side=RIGHT, fill="y")
-        self.listbox.config(yscrollcommand=self.scrollbar.set) 
-        self.log.arqs = os.listdir(directory)
-        self.log.call = self.txtANI.get()
-        tamanho_lista = 0
-        self.log.openFile()
+        if len(self.txtANI.get()) > 0:
+            # askdirectory é um método do Tkinter que abre uma janela para escolher o diretorio
+            self.files = askopenfilenames()
+            self.log.arqs = self.files
+            self.log.call = self.txtANI.get()
+            tamanho_lista = 0
+            self.log.openFile()
+            
+            for linha in self.log.resultadoFinal:
+                self.listbox.insert(tamanho_lista,str(linha).replace("\n",""))
+                tamanho_lista = tamanho_lista + 1
+            self.btnSalva.pack(side=tk.RIGHT)
+        else:
+            messagebox.showwarning(message="Favor colocar o nome do ANI para busca!")
         
-        for linha in self.log.resultadoFinal:
-            self.listbox.insert(tamanho_lista,linha)
-            tamanho_lista = tamanho_lista + 1
-        self.btnSalva.pack(side=RIGHT)
-        self.lblarquivofinal.pack(side=LEFT)
-        self.txtarquivofinal.pack(side=RIGHT)
-        
-    def salvaResult(self):        
-        if len(self.txtarquivofinal.get()) > 1:
-            self.log.arquivofinal = self.txtarquivofinal.get()
+    def salvaResult(self):
+        savefilename = asksaveasfilename(
+                defaultextension='.log', filetypes=[("log files", '*.log')],
+                initialdir=os.path.dirname(self.files[0]),
+                title="Escolha o nome do arquivo")
+        if len(savefilename) > 1:
+            self.log.arquivofinal = savefilename#self.txtarquivofinal.get()
             self.log.defineArqFinal()
             try:
                 for linha in self.log.resultadoFinal:
@@ -115,10 +141,10 @@ class Application:
                 messagebox.showinfo(message="Arquivo Salvo com Sucesso")
             except:    
                 messagebox.showerror(message="Problemas para salvar no arquivo informado")
-                print(sys.exc_info()[0])
         else:
             messagebox.showwarning(message="Favor colocar o nome do arquivo final")
 
-root = Tk()
-Application(root)
-root.mainloop()
+root = Application()
+
+#Application(root)
+#root.mainloop()
