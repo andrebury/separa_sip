@@ -1,71 +1,110 @@
 import os
-from tkinter.filedialog import askdirectory
 from separa_sip import *
-from tkinter import *
-from tkinter import messagebox
 
+import tkinter as tk
+from tkinter import Listbox, messagebox
+from tkinter.filedialog import askdirectory,askopenfilenames, asksaveasfilename
 
 class Application:
-    def __init__(self, master=None):
+    def __init__(self, master_window=None):
+        master_window = tk.Tk()
+        menubar = tk.Menu(master_window)
+        self.filemenu = tk.Menu(menubar, tearoff=0)
+        self.filemenu.add_command(label="Open", command=self.openFiles)
+        self.filemenu.add_command(label="Save", command=self.salvaResult)
+        self.filemenu.add_command(label="Close", command=self.limpar)
+        self.filemenu.add_separator()
+        self.filemenu.add_command(label="Exit", command=master_window.quit)
+        menubar.add_cascade(label="File", menu=self.filemenu)
+        master_window.config(menu=menubar)
+        self.tipoBusca = tk.StringVar()
+
+        master_window.title("SeparaSip")
+        self.files = []
         self.log = Log()
         self.listofarqs = []
         self.index = 0
         self.fonte = ("Verdana", "8")
 
-        self.container1 = Frame(master)
-        self.container1["pady"] = 10
-        self.container1.pack()
+        self.containerCabecalho = tk.Frame(master_window)
+        self.containerCabecalho.grid( row=0,padx=10, pady=10,sticky=tk.E+tk.W)
 
-        self.container2 = Frame(master)
-        self.container2["pady"] = 10
-        self.container2.pack()
+        self.containerSelecao = tk.Frame(self.containerCabecalho)
+        self.containerSelecao.grid( row=0,column=0,padx=10, pady=10)
 
-        self.container3 = Frame(master)
-        self.container3["padx"] = 20
-        self.container3["pady"] = 5
-        self.container3.pack()
+        self.containerInterface = tk.Frame(self.containerCabecalho)
+        self.containerInterface.grid(row=0,column=1, sticky=tk.E+tk.W+tk.N+tk.S)
 
-        self.container4 = Frame(master)
-        self.container4["padx"] = 10
-        self.container4["pady"] = 10
-        self.container4.pack()
+        self.containerTxtBUSCA = tk.Frame(self.containerInterface)
+        self.containerTxtBUSCA.grid( sticky=tk.E+tk.W+tk.N+tk.S,padx=10, pady=10)
 
-        self.container5 = Frame(master)
-        self.container5["padx"] = 20
-        self.container5["pady"] = 5
-        self.container5.pack()
+        self.containerTxtBUSCA_1 = tk.Frame(self.containerTxtBUSCA)
+        self.containerTxtBUSCA_1.grid( sticky=tk.E+tk.W+tk.N+tk.S,)
 
-        self.container6 = Frame(self.container5)
-        self.container6["padx"] = 10
-        self.container6["pady"] = 10
-        self.container6.pack()
+        self.containerTxtBUSCA_2 = tk.Frame(self.containerTxtBUSCA)
+        self.containerTxtBUSCA_2.grid( sticky=tk.E+tk.W+tk.N+tk.S,)
 
-        self.container7 = Frame(self.container5)
-        self.container7["padx"] = 10
-        self.container7["pady"] = 10
-        self.container7.pack()
+        self.containerbtnBUSCA = tk.Frame(self.containerTxtBUSCA)
+        self.containerbtnBUSCA.grid( sticky=tk.E+tk.W+tk.N+tk.S,pady=2)
 
-        self.titulo = Label(self.container1, text="Separa Sip",font=("Calibri", "9", "bold")).pack()
 
-        self.lblarquivofinal = Label(self.container2, text="Arquivo Final:", font=self.fonte, width=12)
-        
 
-        self.txtarquivofinal = Entry(self.container2,width=30,font=self.fonte)
-        
+        self.containerListBoxTextArea = tk.Frame(master_window)
+        self.containerListBoxTextArea.grid(sticky=tk.E+tk.W+tk.N+tk.S,padx=10, pady=10)
 
-        self.lblANI = Label(self.container3, text="ANI:", font=self.fonte, width=10).pack(side=LEFT)
+        master_window.columnconfigure(0, weight=1)
+        master_window.rowconfigure(1, weight=1)
 
-        self.txtANI = Entry(self.container3,width=30,font=self.fonte)
-        self.txtANI.pack(side=RIGHT)
+        self.containerListBoxTextArea.rowconfigure(0, weight=1)
+        self.containerListBoxTextArea.columnconfigure(0, weight=1)
 
-        self.btnCarrega = Button(self.container4, text="Carrega", font=self.fonte, width=12,command=self.directorychooser)
-        self.btnCarrega.pack(side=LEFT)
-        self.btnSalva = Button(self.container4, text="Salva", font=self.fonte, width=12,command=self.salvaResult)
-        
-        self.listbox = Listbox(self.container5, width=200, height=50, selectmode=SINGLE)
+
+        self.listboxCall = tk.Listbox(self.containerSelecao, width=60, height=10, selectmode=tk.SINGLE)
+        self.listboxCall.bind("<Double-Button-1>", self.curseletCall)
+        self.scrollbarCall = tk.Scrollbar(self.containerSelecao, orient="vertical")
+
+        self.lblBUSCA = tk.Label(self.containerTxtBUSCA_1, text="BUSCAR:", font=self.fonte, width=8)
+        self.lblBUSCA.grid(row=0, column=0, sticky=tk.E+tk.W+tk.N+tk.S)
+
+        self.txtBUSCA = tk.Entry(self.containerTxtBUSCA_2,width=34,font=self.fonte)
+        self.txtBUSCA.grid(row=0, column=0, sticky=tk.E+tk.W+tk.N+tk.S)
+
+
+        self.rbtnCALLID = tk.Radiobutton(self.containerbtnBUSCA, text="CALLID", variable=self.tipoBusca, value="CALLID")
+        self.rbtnCALLID.grid( row=0, column=0, sticky=tk.E+tk.W+tk.N+tk.S)
+
+        self.rbtnTELEFONE = tk.Radiobutton(self.containerbtnBUSCA, text="TELEFONE", variable=self.tipoBusca, value="TELEFONE")
+        self.rbtnTELEFONE.grid(row=0, column=1, sticky=tk.E+tk.W+tk.N+tk.S)
+
+
+        self.btnBUSCA = tk.Button(self.containerbtnBUSCA,text="BUSCAR",width=10,font=self.fonte,command=self.buscaCall)
+        self.btnBUSCA.grid(row=0, column=2, sticky=tk.E+tk.W+tk.N+tk.S)
+
+        self.listbox = tk.Listbox(self.containerListBoxTextArea,selectmode=tk.EXTENDED)
         self.listbox.bind("<Double-Button-1>", self.curselet)
-        self.scrollbar = Scrollbar(self.container5, orient="vertical")
+        self.scrollbar = tk.Scrollbar(self.containerListBoxTextArea, orient="vertical")
 
+        self.scrollbar.config(command=self.listbox.yview)
+        self.listbox.config(yscrollcommand=self.scrollbar.set)
+
+        self.listbox.grid(row=0, column=0, sticky=tk.E+tk.W+tk.N+tk.S)
+        self.scrollbar.grid(row=0, column=1, sticky=tk.E+tk.W+tk.N+tk.S)
+
+        self.listboxCall.pack(side=tk.LEFT)
+        self.listboxCall.config(yscrollcommand=self.scrollbarCall.set)
+
+        self.scrollbarCall.config(command=self.listboxCall.yview)
+        self.scrollbarCall.pack(side=tk.LEFT, fill="y",expand=True)
+
+        self.rbtnTELEFONE.select()
+
+        master_window.mainloop()
+
+        
+
+    def limpar(self):
+        self.listbox.delete (0,self.listbox.size())
+        self.listboxCall.delete (0,self.listbox.size())
 
     def destacaTexto(self):
         tamanho_lista = 0
@@ -84,30 +123,79 @@ class Application:
         selection = widget.curselection()
         self.index = selection[0]
 
+    def mostraConteudoPacote(self,chamada):
+        self.listbox.delete(0,self.listbox.size())
+        self.log.resultadoFinal = []
+        bilhete = Pacote()
+        for bilhete in self.log.bilhetes:
+            if bilhete.id == chamada:
+                for linha in bilhete.conteudo:
+                    self.listbox.insert(self.listbox.size(),str(linha).replace("\n",""))
+                self.listbox.insert(self.listbox.size(),"\n")
+            bilhete = Pacote()
 
-    def directorychooser(self):
-        # askdirectory é um método do Tkinter que abre uma janela para escolher o diretorio
-        directory = askdirectory()
-        os.chdir(directory)
-        self.listbox.pack(side=LEFT)
-        self.scrollbar.config(command=self.listbox.yview)
-        self.scrollbar.pack(side=RIGHT, fill="y")
-        self.listbox.config(yscrollcommand=self.scrollbar.set) 
-        self.log.arqs = os.listdir(directory)
-        self.log.call = self.txtANI.get()
-        tamanho_lista = 0
-        self.log.openFile()
+
+
+
+    def curseletCall(self, event):
+        widget = event.widget
+        selection = widget.curselection()
+        chamada = self.listboxCall.get(selection[0])
+        self.mostraConteudoPacote(chamada)
+
+
+    def buscaCall(self):
+        callBusca = self.txtBUSCA.get()
+        self.mostraConteudoPacoteBusca()
+
+    def mostraConteudoPacoteBusca(self):
+        self.listbox.delete(0,self.listbox.size())
+        self.log.resultadoFinal = []
+        bilhete = Pacote()
+        escolha = str(self.tipoBusca.get())
+        chamada = self.txtBUSCA.get()
+        if escolha == "TELEFONE":
+            for bilhete in self.log.bilhetes:
+                if chamada in bilhete.TO or chamada in bilhete.FROM:
+                    for linha in bilhete.conteudo:
+                        self.listbox.insert(self.listbox.size(),str(linha).replace("\n",""))
+                    self.listbox.insert(self.listbox.size(),"\n")
+                bilhete = Pacote()
+        else:
+            for bilhete in self.log.bilhetes:
+                if bilhete.id == chamada:
+                    for linha in bilhete.conteudo:
+                        self.listbox.insert(self.listbox.size(),str(linha).replace("\n",""))
+                    self.listbox.insert(self.listbox.size(),"\n")
+                bilhete = Pacote()
+
+
+
+
+    def openFiles(self):
+        self.files = askopenfilenames()
+        for a in self.files:
+            with open(a, 'r', encoding='utf-8', errors='ignore') as file:
+                self.log.f = file.readlines()
+                for linha in range(0,30):
+                    if self.log.f[linha].find("CFGGVPResourceMgr") > 0:
+                        self.log.appType = "RM"
+                for linha in range(0,30):
+                    if self.log.f[linha].find("TServer") > 0:
+                        self.log.appType = "SIPServer"
+            file.close()
+            self.log.preencheBilhetes(self.log.f)
         
-        for linha in self.log.resultadoFinal:
-            self.listbox.insert(tamanho_lista,linha)
-            tamanho_lista = tamanho_lista + 1
-        self.btnSalva.pack(side=RIGHT)
-        self.lblarquivofinal.pack(side=LEFT)
-        self.txtarquivofinal.pack(side=RIGHT)
-        
-    def salvaResult(self):        
-        if len(self.txtarquivofinal.get()) > 1:
-            self.log.arquivofinal = self.txtarquivofinal.get()
+        for id in self.log.callid:
+            self.listboxCall.insert(self.listbox.size(),str(id).replace("\n",""))
+            
+    def salvaResult(self):
+        savefilename = asksaveasfilename(
+                defaultextension='.log', filetypes=[("log files", '*.log')],
+                initialdir=os.path.dirname(self.files[0]),
+                title="Escolha o nome do arquivo")
+        if len(savefilename) > 1:
+            self.log.arquivofinal = savefilename
             self.log.defineArqFinal()
             try:
                 for linha in self.log.resultadoFinal:
@@ -115,10 +203,8 @@ class Application:
                 messagebox.showinfo(message="Arquivo Salvo com Sucesso")
             except:    
                 messagebox.showerror(message="Problemas para salvar no arquivo informado")
-                print(sys.exc_info()[0])
         else:
             messagebox.showwarning(message="Favor colocar o nome do arquivo final")
 
-root = Tk()
-Application(root)
-root.mainloop()
+if __name__ == "__main__":
+    root = Application()
