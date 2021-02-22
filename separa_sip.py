@@ -1,17 +1,9 @@
 import os
-
+import re
 class Pacote:
-    def __init__(self,to_,from_,type_,direction,via,max_forwads,CSeq,caliid,contact,xml):
-        self.to_ = to_
-        self.from_ = from_
-        self.type_ = type_
-        self.direction = direction
-        self.via = via
-        self.max_forwads = max_forwads
-        self.CSeq = CSeq
-        self.caliid = caliid
-        self.contact = contact
-        self.xml = xml
+    def __init__(self):
+        self.id = ""
+        self.conteudo = []
 class Log:
 
     def __init__(self):
@@ -24,6 +16,14 @@ class Log:
         self.f = []
         self.arquivofinal = ""
         self.resultadoFinal = []
+        self.bilheteSozinho = Pacote
+        self.bilheteSozinhoConteudo = []
+        self.call_id = ""
+        self.nlSIP = re.compile('[0-9*]{2}:[0-9*]{2}:[0-9*]{2}.[0-9*]{3}')
+        self.nlRM = re.compile('[0-9*]{4}-[0-9*]{2}-[0-9*]{2}')
+        self.appType = ""
+        self.IDAPP = {"RM":{"iniPacote":"CCPSIPMessageInterceptor","reg":'[0-9*]{4}-[0-9*]{2}-[0-9*]{2}'}
+                    ,"SIPServer":{"iniPacote":" [0,UDP] ","reg":'[0-9*]{2}:[0-9*]{2}:[0-9*]{2}.[0-9*]{3}'}}
     
     def ArquivoFinal(self):
         self.separadow = open(input("Digite o nome do arquivo final sem extensão: ") + '.txt', 'w')
@@ -44,9 +44,11 @@ class Log:
 
     def criaListaCallid(self,linha):
         if linha.find("Call-ID: ") >= 0:
-            callidstr = linha[9:linha.find("@")]
+            callidstr = linha[linha.find("Call-ID: ") + 9:linha.find("@")]
+            self.call_id = callidstr
             if callidstr not in self.callid:
                 self.callid.append(callidstr)
+                
 
     def openFile(self):
         for a in self.arqs:
@@ -55,35 +57,32 @@ class Log:
             with open(a, 'r', encoding='utf-8', errors='ignore') as file:
                 self.f = file.readlines()
             file.close()
-            self.preencheBilhetes()
+            self.preencheBilhetes(self.f)
 
         self.preencheBilhetesEscolhidos()
 
-    def preencheBilhetes(self):
-        achado = False
-        kall = 0
+    def preencheBilhetes(self,f):
         sip = False
-        count = -1
-        for linha in self.f:
-            if linha.find('CCPSIPMessageInterceptor') > 1:
-                kall = len(self.bilhetes)+1
+        for linha in f:
+            if linha.find(self.IDAPP[self.appType]['iniPacote']) > 1:
                 sip = True
-                self.bilhetes.append("\n")
-                self.bilhetes.append(linha)
-                achado = False
+                self.bilheteSozinhoConteudo.append(linha)
             else:
-                if sip == True and linha.find('2021-') < 0:
+                regApp = re.compile(self.IDAPP[self.appType]['reg'])
+
+                if sip == True and (regApp.match(linha) == None):
                     if len(linha) > 2:
-                        count = count + 1
-                        #fw.write(linha)
-                        self.bilhetes.append(linha)
+                        self.bilheteSozinhoConteudo.append(linha)
+                        # self.bilhetes.append(linha)
                         self.criaListaCallid(linha)
-                        if linha.find(self.call) > 1 and achado is False:
-                            self.bilhetes_escolhidos.append(kall)
-                            achado = True
                 else:
+                    if sip == True:
+                        pacote = Pacote()
+                        pacote.id,pacote.conteudo = self.call_id,self.bilheteSozinhoConteudo
+                        self.bilhetes.append(pacote)
+                        self.call_id = ""
+                        self.bilheteSozinhoConteudo = []
                     sip = False
-                    achado = False
         
     def preencheBilhetesEscolhidos(self):
         for linhab in self.bilhetes_escolhidos:
@@ -103,14 +102,6 @@ class Log:
                         direcao = direcao
                     self.resultadoFinal.append(direcao + " " + self.bilhetes[count])
                     count = count + 1
-
-
-    def mostraBilhetes(self):
-        print("Quantidade de pacotes: " + str(len(self.bilhetes_escolhidos)))
-        for b in self.bilhetes_escolhidos:
-            print(b)
-
-
 
 if __name__ == '__main__':
     log = Log()
