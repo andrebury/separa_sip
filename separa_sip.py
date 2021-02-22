@@ -3,6 +3,8 @@ import re
 class Pacote:
     def __init__(self):
         self.id = ""
+        self.FROM = ""
+        self.TO = ""
         self.conteudo = []
 class Log:
 
@@ -24,7 +26,10 @@ class Log:
         self.appType = ""
         self.IDAPP = {"RM":{"iniPacote":"CCPSIPMessageInterceptor","reg":'[0-9*]{4}-[0-9*]{2}-[0-9*]{2}'}
                     ,"SIPServer":{"iniPacote":" [0,UDP] ","reg":'[0-9*]{2}:[0-9*]{2}:[0-9*]{2}.[0-9*]{3}'}}
-    
+        self.TO = ""
+        self.FROM = ""
+
+
     def ArquivoFinal(self):
         self.separadow = open(input("Digite o nome do arquivo final sem extensão: ") + '.txt', 'w')
         
@@ -32,7 +37,6 @@ class Log:
         self.separadow = open(self.arquivofinal, 'w')
 
     def DirecionaFolder(self):
-        #self.Folder(str(input("Digite a pasta: ")))
         os.chdir(input("Digite a pasta: "))
 
     def listArqs(self):
@@ -48,7 +52,17 @@ class Log:
             self.call_id = callidstr
             if callidstr not in self.callid:
                 self.callid.append(callidstr)
-                
+    
+    def identificaANI(self,linha):
+        if linha.find("From:") >= 0:
+            self.FROM = linha[linha.find("ip:") + 3:linha.find("@")]
+
+        elif linha.find("To:") >= 0:
+            self.TO = linha[linha.find("ip:") + 3:linha.find("@")]
+
+        else:
+            pass
+
 
     def openFile(self):
         for a in self.arqs:
@@ -73,14 +87,17 @@ class Log:
                 if sip == True and (regApp.match(linha) == None):
                     if len(linha) > 2:
                         self.bilheteSozinhoConteudo.append(linha)
-                        # self.bilhetes.append(linha)
                         self.criaListaCallid(linha)
+                        if (linha.find("From:") >= 0  or linha.find("To:") >= 0) and linha.find("@") >= 0:
+                            self.identificaANI(linha)
                 else:
                     if sip == True:
                         pacote = Pacote()
-                        pacote.id,pacote.conteudo = self.call_id,self.bilheteSozinhoConteudo
+                        pacote.id,pacote.FROM,pacote.TO,pacote.conteudo = self.call_id,self.FROM,self.TO,self.bilheteSozinhoConteudo
                         self.bilhetes.append(pacote)
                         self.call_id = ""
+                        self.TO = ""
+                        self.FROM = ""
                         self.bilheteSozinhoConteudo = []
                     sip = False
         

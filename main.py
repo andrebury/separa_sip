@@ -17,6 +17,7 @@ class Application:
         self.filemenu.add_command(label="Exit", command=master_window.quit)
         menubar.add_cascade(label="File", menu=self.filemenu)
         master_window.config(menu=menubar)
+        self.tipoBusca = tk.StringVar()
 
         master_window.title("SeparaSip")
         self.files = []
@@ -46,6 +47,8 @@ class Application:
         self.containerbtnBUSCA = tk.Frame(self.containerTxtBUSCA)
         self.containerbtnBUSCA.grid( sticky=tk.E+tk.W+tk.N+tk.S,pady=2)
 
+
+
         self.containerListBoxTextArea = tk.Frame(master_window)
         self.containerListBoxTextArea.grid(sticky=tk.E+tk.W+tk.N+tk.S,padx=10, pady=10)
 
@@ -63,12 +66,20 @@ class Application:
         self.lblBUSCA = tk.Label(self.containerTxtBUSCA_1, text="BUSCAR:", font=self.fonte, width=8)
         self.lblBUSCA.grid(row=0, column=0, sticky=tk.E+tk.W+tk.N+tk.S)
 
-        self.txtBUSCA = tk.Entry(self.containerTxtBUSCA_2,width=30,font=self.fonte)
+        self.txtBUSCA = tk.Entry(self.containerTxtBUSCA_2,width=34,font=self.fonte)
         self.txtBUSCA.grid(row=0, column=0, sticky=tk.E+tk.W+tk.N+tk.S)
-        
-        self.btnBUSCA = tk.Button(self.containerbtnBUSCA,text="BUSCAR",width=15,font=self.fonte,command=self.buscaCall)
-        self.btnBUSCA.grid(row=0, column=0, sticky=tk.E+tk.W+tk.N+tk.S)
-        
+
+
+        self.rbtnCALLID = tk.Radiobutton(self.containerbtnBUSCA, text="CALLID", variable=self.tipoBusca, value="CALLID")
+        self.rbtnCALLID.grid( row=0, column=0, sticky=tk.E+tk.W+tk.N+tk.S)
+
+        self.rbtnTELEFONE = tk.Radiobutton(self.containerbtnBUSCA, text="TELEFONE", variable=self.tipoBusca, value="TELEFONE")
+        self.rbtnTELEFONE.grid(row=0, column=1, sticky=tk.E+tk.W+tk.N+tk.S)
+
+
+        self.btnBUSCA = tk.Button(self.containerbtnBUSCA,text="BUSCAR",width=10,font=self.fonte,command=self.buscaCall)
+        self.btnBUSCA.grid(row=0, column=2, sticky=tk.E+tk.W+tk.N+tk.S)
+
         self.listbox = tk.Listbox(self.containerListBoxTextArea,selectmode=tk.EXTENDED)
         self.listbox.bind("<Double-Button-1>", self.curselet)
         self.scrollbar = tk.Scrollbar(self.containerListBoxTextArea, orient="vertical")
@@ -85,7 +96,11 @@ class Application:
         self.scrollbarCall.config(command=self.listboxCall.yview)
         self.scrollbarCall.pack(side=tk.LEFT, fill="y",expand=True)
 
+        self.rbtnTELEFONE.select()
+
         master_window.mainloop()
+
+        
 
     def limpar(self):
         self.listbox.delete (0,self.listbox.size())
@@ -120,6 +135,8 @@ class Application:
             bilhete = Pacote()
 
 
+
+
     def curseletCall(self, event):
         widget = event.widget
         selection = widget.curselection()
@@ -128,14 +145,35 @@ class Application:
 
 
     def buscaCall(self):
-        count = 0
         callBusca = self.txtBUSCA.get()
-        self.mostraConteudoPacote(callBusca)
+        self.mostraConteudoPacoteBusca()
+
+    def mostraConteudoPacoteBusca(self):
+        self.listbox.delete(0,self.listbox.size())
+        self.log.resultadoFinal = []
+        bilhete = Pacote()
+        escolha = str(self.tipoBusca.get())
+        chamada = self.txtBUSCA.get()
+        if escolha == "TELEFONE":
+            for bilhete in self.log.bilhetes:
+                if chamada in bilhete.TO or chamada in bilhete.FROM:
+                    for linha in bilhete.conteudo:
+                        self.listbox.insert(self.listbox.size(),str(linha).replace("\n",""))
+                    self.listbox.insert(self.listbox.size(),"\n")
+                bilhete = Pacote()
+        else:
+            for bilhete in self.log.bilhetes:
+                if bilhete.id == chamada:
+                    for linha in bilhete.conteudo:
+                        self.listbox.insert(self.listbox.size(),str(linha).replace("\n",""))
+                    self.listbox.insert(self.listbox.size(),"\n")
+                bilhete = Pacote()
+
+
+
 
     def openFiles(self):
         self.files = askopenfilenames()
-        #self.log.arqs = self.files
-        #self.log.call = self.txtBUSCA.get()
         for a in self.files:
             with open(a, 'r', encoding='utf-8', errors='ignore') as file:
                 self.log.f = file.readlines()
@@ -147,19 +185,10 @@ class Application:
                         self.log.appType = "SIPServer"
             file.close()
             self.log.preencheBilhetes(self.log.f)
-        # for linha in self.f:
-        #     self.listbox.insert(self.listbox.size(),str(linha).replace("\n",""))
         
         for id in self.log.callid:
             self.listboxCall.insert(self.listbox.size(),str(id).replace("\n",""))
-        # pass
-        # self.log.openFile()
-        
-
-        # for linha in self.log.resultadoFinal:
-        #     self.listbox.insert(self.listbox.size(),str(linha).replace("\n",""))
-   
-    
+            
     def salvaResult(self):
         savefilename = asksaveasfilename(
                 defaultextension='.log', filetypes=[("log files", '*.log')],
