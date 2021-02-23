@@ -21,8 +21,8 @@ class Log:
         self.bilheteSozinho = Pacote
         self.bilheteSozinhoConteudo = []
         self.call_id = ""
-        self.nlSIP = re.compile('[0-9*]{2}:[0-9*]{2}:[0-9*]{2}.[0-9*]{3}')
-        self.nlRM = re.compile('[0-9*]{4}-[0-9*]{2}-[0-9*]{2}')
+        self.nlSIP = re.compile('^[0-9*]{2}:[0-9*]{2}:[0-9*]{2}.[0-9*]{3}:\s')
+        self.nlRM = re.compile('^[0-9*]{4}-[0-9*]{2}-[0-9*]{2}\s[0-9*]{2}:[0-9*]{2}:[0-9*]{2}.[0-9*]{3}')
         self.appType = ""
         self.IDAPP = {"RM":{"iniPacote":"CCPSIPMessageInterceptor","reg":'[0-9*]{4}-[0-9*]{2}-[0-9*]{2}'}
                     ,"SIPServer":{"iniPacote":" [0,UDP] ","reg":'[0-9*]{2}:[0-9*]{2}:[0-9*]{2}.[0-9*]{3}'}}
@@ -78,7 +78,7 @@ class Log:
     def preencheBilhetes(self,f):
         sip = False
         for linha in f:
-            if linha.find(self.IDAPP[self.appType]['iniPacote']) > 1:
+            if linha.find(self.IDAPP[self.appType]['iniPacote']) > 1 and sip == False:
                 sip = True
                 self.bilheteSozinhoConteudo.append(linha)
             else:
@@ -99,7 +99,14 @@ class Log:
                         self.TO = ""
                         self.FROM = ""
                         self.bilheteSozinhoConteudo = []
-                    sip = False
+
+                    if linha.find(self.IDAPP[self.appType]['iniPacote']) > 1 and sip == True:
+                        sip = True
+                        self.bilheteSozinhoConteudo.append("\n")
+                        self.bilheteSozinhoConteudo.append(linha)
+
+                    else:
+                        sip = False
         
     def preencheBilhetesEscolhidos(self):
         for linhab in self.bilhetes_escolhidos:

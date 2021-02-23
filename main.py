@@ -18,6 +18,7 @@ class Application:
         menubar.add_cascade(label="File", menu=self.filemenu)
         master_window.config(menu=menubar)
         self.tipoBusca = tk.StringVar()
+        self.lblInfoVar = tk.StringVar()
 
         master_window.title("SeparaSip")
         self.files = []
@@ -47,10 +48,12 @@ class Application:
         self.containerbtnBUSCA = tk.Frame(self.containerTxtBUSCA)
         self.containerbtnBUSCA.grid( sticky=tk.E+tk.W+tk.N+tk.S,pady=2)
 
-
+        self.containerlblInfo = tk.Frame(self.containerTxtBUSCA)
+        self.containerlblInfo.grid( sticky=tk.E+tk.W+tk.N+tk.S,pady=2)
 
         self.containerListBoxTextArea = tk.Frame(master_window)
         self.containerListBoxTextArea.grid(sticky=tk.E+tk.W+tk.N+tk.S,padx=10, pady=10)
+
 
         master_window.columnconfigure(0, weight=1)
         master_window.rowconfigure(1, weight=1)
@@ -80,6 +83,9 @@ class Application:
         self.btnBUSCA = tk.Button(self.containerbtnBUSCA,text="BUSCAR",width=10,font=self.fonte,command=self.buscaCall)
         self.btnBUSCA.grid(row=0, column=2, sticky=tk.E+tk.W+tk.N+tk.S)
 
+        self.lblInfo = tk.Label(self.containerlblInfo ,font=self.fonte, width=10, height=4,textvariable=self.lblInfoVar)
+        self.lblInfo.grid(row=0, column=0, sticky=tk.E+tk.W+tk.N+tk.S)
+
         self.listbox = tk.Listbox(self.containerListBoxTextArea,selectmode=tk.EXTENDED)
         self.listbox.bind("<Double-Button-1>", self.curselet)
         self.scrollbar = tk.Scrollbar(self.containerListBoxTextArea, orient="vertical")
@@ -101,10 +107,12 @@ class Application:
         master_window.mainloop()
 
         
+    def textInfo(self,nome):
+        self.lblInfoVar.set("Arquivos: {}".format(nome))
 
     def limpar(self):
         self.listbox.delete (0,self.listbox.size())
-        self.listboxCall.delete (0,self.listbox.size())
+        self.listboxCall.delete (0,self.listboxCall.size())
 
     def destacaTexto(self):
         tamanho_lista = 0
@@ -127,8 +135,10 @@ class Application:
         self.listbox.delete(0,self.listbox.size())
         self.log.resultadoFinal = []
         bilhete = Pacote()
-        for bilhete in self.log.bilhetes:
+        count = 0
+        for bilhete in self.log.bilhetes:            
             if bilhete.id == chamada:
+                count = count + 1
                 for linha in bilhete.conteudo:
                     self.listbox.insert(self.listbox.size(),str(linha).replace("\n",""))
                 self.listbox.insert(self.listbox.size(),"\n")
@@ -154,9 +164,11 @@ class Application:
         bilhete = Pacote()
         escolha = str(self.tipoBusca.get())
         chamada = self.txtBUSCA.get()
+        count = 0
         if escolha == "TELEFONE":
             for bilhete in self.log.bilhetes:
                 if chamada in bilhete.TO or chamada in bilhete.FROM:
+                    count = count + 1
                     for linha in bilhete.conteudo:
                         self.listbox.insert(self.listbox.size(),str(linha).replace("\n",""))
                     self.listbox.insert(self.listbox.size(),"\n")
@@ -164,6 +176,7 @@ class Application:
         else:
             for bilhete in self.log.bilhetes:
                 if bilhete.id == chamada:
+                    count = count + 1
                     for linha in bilhete.conteudo:
                         self.listbox.insert(self.listbox.size(),str(linha).replace("\n",""))
                     self.listbox.insert(self.listbox.size(),"\n")
@@ -173,6 +186,7 @@ class Application:
 
 
     def openFiles(self):
+        arquivos =""
         self.files = askopenfilenames()
         for a in self.files:
             with open(a, 'r', encoding='utf-8', errors='ignore') as file:
@@ -180,13 +194,23 @@ class Application:
                 for linha in range(0,30):
                     if self.log.f[linha].find("CFGGVPResourceMgr") > 0:
                         self.log.appType = "RM"
+                        if len(arquivos) > 1:
+                            arquivos = arquivos + ", RM: " + a
+                        else:
+                            arquivos = "RM: " + a
                 for linha in range(0,30):
                     if self.log.f[linha].find("TServer") > 0:
                         self.log.appType = "SIPServer"
+                        if len(arquivos) > 1:
+                            arquivos = arquivos + ", SIPServer: " + a
+                        else:
+                            arquivos = "SIPServer: " + a
             file.close()
             self.log.preencheBilhetes(self.log.f)
-        
+        self.textInfo(arquivos)
+        count = 0
         for id in self.log.callid:
+            count = count + 1
             self.listboxCall.insert(self.listbox.size(),str(id).replace("\n",""))
             
     def salvaResult(self):
